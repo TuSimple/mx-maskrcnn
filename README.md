@@ -41,19 +41,21 @@ numpy(1.12.1), cv2(2.4.9), PIL(4.3), matplotlib(2.1.0), cython(0.26.1), easydict
 
 ```
 data/cityscape/
-              |->leftImg8bit/
-              |     |-> train/
-              |     |-> val/
-              |     L-> test/
-              |->gtFine/
-              |     |-> train/
-              |     |-> val/
-              |     L-> test/
-              L->imglists/
-                    |->train.lst
-                    |->val.lst
-                    L->test.lst
+├── leftImg8bit/
+│   ├── train/
+│   ├── val/
+│   └── test/
+├── gtFine/
+│   ├── train/
+│   ├── val/
+│   └── test/
+└── imglists/
+    ├── train.lst
+    ├── val.lst
+    └── test.lst
 ```
+
+
 2. Download Resnet-50 pretrained model.
 ```
 bash scripts/download_res50.sh
