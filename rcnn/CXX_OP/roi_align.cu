@@ -75,9 +75,9 @@ __global__ void ROIAlignForwardKernel(const int count, const Dtype* bottom_data,
       for (Dtype w = wstart+w_stride; w <= wend-w_stride+0.01; w += max(w_stride, 0.01)) {
         bottom_index ++;
         int hlow = min(max(static_cast<int>(floor(h)), 0), height-1);
-        int hhigh = hlow + 1;
+        int hhigh = min(max(static_cast<int>(ceil(h)), 0), height-1);
         int wleft = min(max(static_cast<int>(floor(w)), 0), width-1);
-        int wright = wleft + 1;
+        int wright = min(max(static_cast<int>(ceil(w)), 0), width-1);
         int topleft = hlow * width + wleft;
         int topright = hlow * width + wright;
         int bottomleft = hhigh * width + wleft;
@@ -207,9 +207,9 @@ __global__ void ROIAlignBackwardAccKernel(const int count, const Dtype* top_diff
               if (offset_argmax_data[pool_index] != bottom_index) continue;
               // compute the integer coordinates around (h, w) for bilinear interpolation
               int hlow = min(max(static_cast<int>(floor(rh)), 0), height-1);
-              int hhigh = hlow + 1;
+              int hhigh = min(max(static_cast<int>(ceil(rh)), 0), height-1);
               int wleft = min(max(static_cast<int>(floor(rw)), 0), width-1);
-              int wright = wleft + 1;
+              int wright = min(max(static_cast<int>(ceil(rw)), 0), width-1);
               if (h != hlow && h != hhigh && w != wleft && w != wright) // (w, h) is not around (rw, rh)
                   continue;
               
