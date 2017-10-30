@@ -1,3 +1,20 @@
+# Changes
+This is a fork of MX [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn),for convinent to test a single file
+
+Before start, you need to download pretrained model from [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn), and put it in dir model.
+
+Second, you should run make in this folder and follow instructions in [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn) to recomplier mxnet.
+
+And in the last, just run bash `bash scripts/demo.sh` to show the result you want.
+
+You can find all changes in source `rcnn/tools/demo_maskrcnn.py`
+
+Enjoy!
+
+<div align="center">
+<img src="https://github.com/kohillyang/mx-maskrcnn/blob/master/figures/Figure_1.png"><br><br>
+</div>
+
 # MX Mask R-CNN
 A MXNet implementation of [Mask R-CNN](https://arxiv.org/abs/1703.06870).
 
@@ -41,18 +58,18 @@ numpy(1.12.1), cv2(2.4.9), PIL(4.3), matplotlib(2.1.0), cython(0.26.1), easydict
 
 ```
 data/cityscape/
-├── leftImg8bit/
-│   ├── train/
-│   ├── val/
-│   └── test/
-├── gtFine/
-│   ├── train/
-│   ├── val/
-│   └── test/
-└── imglists/
-    ├── train.lst
-    ├── val.lst
-    └── test.lst
+��������� leftImg8bit/
+���   ��������� train/
+���   ��������� val/
+���   ��������� test/
+��������� gtFine/
+���   ��������� train/
+���   ��������� val/
+���   ��������� test/
+��������� imglists/
+    ��������� train.lst
+    ��������� val.lst
+    ��������� test.lst
 ```
 
 
@@ -104,8 +121,8 @@ bash scripts/demo.sh
 1. Tianqi Chen, Mu Li, Yutian Li, Min Lin, Naiyan Wang, Minjie Wang, Tianjun Xiao, Bing Xu, Chiyuan Zhang, and Zheng Zhang. MXNet: A Flexible and Efficient Machine Learning Library for Heterogeneous Distributed Systems. In Neural Information Processing Systems, Workshop on Machine Learning Systems, 2015
 2. Ross Girshick. "Fast R-CNN." In Proceedings of the IEEE International Conference on Computer Vision, 2015.
 3. Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun. "Faster R-CNN: Towards real-time object detection with region proposal networks." In IEEE Transactions on Pattern Analysis and Machine Intelligence, 2016.
-4. Tsung-Yi Lin, Piotr Dollár, Ross Girshick, Kaiming He, Bharath Hariharan, Serge Belongie. "Feature Pyramid Networks for Object Detection." In Computer Vision and Pattern Recognition, IEEE Conference on, 2017.
-5. Kaiming He, Georgia Gkioxari, Piotr Dollár, Ross Girshick. "Mask R-CNN." In Proceedings of the IEEE International Conference on Computer Vision, 2017.
+4. Tsung-Yi Lin, Piotr Doll��r, Ross Girshick, Kaiming He, Bharath Hariharan, Serge Belongie. "Feature Pyramid Networks for Object Detection." In Computer Vision and Pattern Recognition, IEEE Conference on, 2017.
+5. Kaiming He, Georgia Gkioxari, Piotr Doll��r, Ross Girshick. "Mask R-CNN." In Proceedings of the IEEE International Conference on Computer Vision, 2017.
 4. Yangqing Jia, Evan Shelhamer, Jeff Donahue, Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell. "Caffe: Convolutional architecture for fast feature embedding." In Proceedings of the ACM International Conference on Multimedia, 2014.
 5. Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li, and Li Fei-Fei. "ImageNet: A large-scale hierarchical image database." In Computer Vision and Pattern Recognition, IEEE Conference on, 2009.
 6. Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun. "Deep Residual Learning for Image Recognition". In Computer Vision and Pattern Recognition, IEEE Conference on, 2016.
