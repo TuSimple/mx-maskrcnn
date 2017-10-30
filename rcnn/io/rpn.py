@@ -45,7 +45,7 @@ def get_rpn_batch(roidb):
      :return: data, label
      """
     # support multiple images per device now
-    imgs, roidb = get_image(roidb)
+    imgs, roidb = get_image(roidb, scale=config.TRAIN.SCALE)
     im_array = tensor_vstack(imgs)
     # im_array = np.vstack(imgs)
     im_info = []
