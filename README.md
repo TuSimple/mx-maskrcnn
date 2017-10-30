@@ -1,9 +1,9 @@
 # Changes
-This is a fork of MX [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn),for convinent to test a single file
+This is a fork of MX [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn),for convenience to test a single file
 
-Before start, you need to download pretrained model from [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn), and put it in dir model.
+Before start, you need to download pretrained model from [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn), and put it in directory `model`.
 
-Second, you should run make in this folder and follow instructions in [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn) to recomplier mxnet.
+Second, you should run make in this folder and follow instructions in [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn) to recompile mxnet.
 
 And in the last, just run bash `bash scripts/demo.sh` to show the result you want.
 
