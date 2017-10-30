@@ -1,7 +1,7 @@
 # MX Mask R-CNN
-A MXNet implementation of [Mask R-CNN](https://arxiv.org/abs/1703.06870).
+An MXNet implementation of [Mask R-CNN](https://arxiv.org/abs/1703.06870).
 
-This repository is largely based on the mx-rcnn implementation of Faster RCNN available [here](https://github.com/precedenceguo/mx-rcnn).
+This repository is based largely on the mx-rcnn implementation of Faster RCNN available [here](https://github.com/precedenceguo/mx-rcnn).
 
 
 <div align="center">
@@ -24,20 +24,20 @@ This repository is largely based on the mx-rcnn implementation of Faster RCNN av
 - Backbone: Resnet-50-FPN
 
 ### COCO
-Comming soon, please stay tune.
+Coming soon, please stay tuned.
 
 ## Requirement
 
 We tested our code on:
 
-Ubuntu 16.04, Python 2.7
+Ubuntu 16.04, Python 2.7 with
 
 numpy(1.12.1), cv2(2.4.9), PIL(4.3), matplotlib(2.1.0), cython(0.26.1), easydict
 
 ## Preparation for Training
 
 1. Download Cityscapes data (gtFine_trainvaltest.zip, leftImg8bit_trainvaltest.zip). Extract them into 'data/cityscape/'.
- The folder then look like below:
+ The folder structure would then look as shown below:
 
 ```
 data/cityscape/
@@ -94,8 +94,8 @@ bash scripts/eval.sh
 ```
 
 ## Demo
-1. Download model, available at [Dropbox](https://www.dropbox.com/s/zidcbbt7apwg3z6/final-0000.params?dl=0)/[BaiduYun](https://pan.baidu.com/s/1o8n4VMU), and place it in model folder. 
-2. Make sure that you have placed cityscapes data in 'data/cityscapes' folder.
+1. Download model, available at [Dropbox](https://www.dropbox.com/s/zidcbbt7apwg3z6/final-0000.params?dl=0)/[BaiduYun](https://pan.baidu.com/s/1o8n4VMU), and place it in the model folder. 
+2. Make sure that you have the cityscapes data in 'data/cityscapes' folder.
 ```
 bash scripts/demo.sh
 ```
