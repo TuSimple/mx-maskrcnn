@@ -29,7 +29,8 @@ def demo_maskrcnn(network, dataset, image_set, root_path, dataset_path, result_p
     
     max_image_shape = (1,3,672,1040)
     max_data_shapes = [("data",max_image_shape),("im_info",(1,3))]
-    mod = mx.mod.Module(symbol = sym, data_names = ["data","im_info"], label_names= None,
+    mod = MutableModule(symbol = sym, data_names = ["data","im_info"], label_names= None,
+                            max_data_shapes = max_data_shapes,
                               context=ctx)
     mod.bind(data_shapes = max_data_shapes, label_shapes = None, for_training=False)
     mod.init_params(arg_params=arg_params, aux_params=aux_params)
@@ -42,7 +43,7 @@ def demo_maskrcnn(network, dataset, image_set, root_path, dataset_path, result_p
             self.data = [mx.nd.array(img),im_info]
             self.label = None
             self.provide_label = None
-            self.provide_data = [("data",(1,3,img.shape[0],img.shape[1])),("im_info",(1,3))]
+            self.provide_data = [("data",(1,3,img.shape[2],img.shape[3])),("im_info",(1,3))]
     
     img_path = "figures/timg.jpeg"
     img_ori = cv2.imread(img_path)
