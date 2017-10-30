@@ -101,7 +101,7 @@ def get_fpn_maskrcnn_batch(roidb, maskdb):
     return a dictionary that contains raw data.
     """
     num_images = len(roidb)
-    imgs, roidb = get_image(roidb)
+    imgs, roidb = get_image(roidb, scale=config.TRAIN.SCALE)
     im_array = tensor_vstack(imgs)
 
     assert config.TRAIN.BATCH_ROIS % config.TRAIN.BATCH_IMAGES == 0, \
