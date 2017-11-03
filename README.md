@@ -1,24 +1,7 @@
-# Changes
-This is a fork of MX [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn),for convenience to test a single file
-
-Before start, you need to download pretrained model from [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn), and put it in directory `model`.
-
-Second, you should run make in this folder and follow instructions in [Mask R-CNN](https://github.com/TuSimple/mx-maskrcnn) to recompile mxnet.
-
-And in the last, just run bash `bash scripts/demo.sh` to show the result you want.
-
-You can find all changes in source `rcnn/tools/demo_maskrcnn.py`
-
-Enjoy!
-
-<div align="center">
-<img src="https://github.com/kohillyang/mx-maskrcnn/blob/master/figures/Figure_1.png"><br><br>
-</div>
-
 # MX Mask R-CNN
-A MXNet implementation of [Mask R-CNN](https://arxiv.org/abs/1703.06870).
+An MXNet implementation of [Mask R-CNN](https://arxiv.org/abs/1703.06870).
 
-This repository is largely based on the mx-rcnn implementation of Faster RCNN available [here](https://github.com/precedenceguo/mx-rcnn).
+This repository is based largely on the mx-rcnn implementation of Faster RCNN available [here](https://github.com/precedenceguo/mx-rcnn).
 
 
 <div align="center">
@@ -41,35 +24,35 @@ This repository is largely based on the mx-rcnn implementation of Faster RCNN av
 - Backbone: Resnet-50-FPN
 
 ### COCO
-Comming soon, please stay tune.
+Coming soon, please stay tuned.
 
 ## Requirement
 
 We tested our code on:
 
-Ubuntu 16.04, Python 2.7
+Ubuntu 16.04, Python 2.7 with
 
 numpy(1.12.1), cv2(2.4.9), PIL(4.3), matplotlib(2.1.0), cython(0.26.1), easydict
 
 ## Preparation for Training
 
 1. Download Cityscapes data (gtFine_trainvaltest.zip, leftImg8bit_trainvaltest.zip). Extract them into 'data/cityscape/'.
- The folder then look like below:
+ The folder structure would then look as shown below:
 
 ```
 data/cityscape/
-��������� leftImg8bit/
-���   ��������� train/
-���   ��������� val/
-���   ��������� test/
-��������� gtFine/
-���   ��������� train/
-���   ��������� val/
-���   ��������� test/
-��������� imglists/
-    ��������� train.lst
-    ��������� val.lst
-    ��������� test.lst
+├── leftImg8bit/
+│   ├── train/
+│   ├── val/
+│   └── test/
+├── gtFine/
+│   ├── train/
+│   ├── val/
+│   └── test/
+└── imglists/
+    ├── train.lst
+    ├── val.lst
+    └── test.lst
 ```
 
 
@@ -111,18 +94,23 @@ bash scripts/eval.sh
 ```
 
 ## Demo
-1. Download model, available at [Dropbox](https://www.dropbox.com/s/zidcbbt7apwg3z6/final-0000.params?dl=0)/[BaiduYun](https://pan.baidu.com/s/1o8n4VMU), and place it in model folder. 
-2. Make sure that you have placed cityscapes data in 'data/cityscapes' folder.
+1. Download model, available at [Dropbox](https://www.dropbox.com/s/zidcbbt7apwg3z6/final-0000.params?dl=0)/[BaiduYun](https://pan.baidu.com/s/1o8n4VMU), and place it in the model folder. 
+2. Make sure that you have the cityscapes data in 'data/cityscapes' folder.
 ```
 bash scripts/demo.sh
 ```
+
+## Test single image
+1. Download model, available at [Dropbox](https://www.dropbox.com/s/zidcbbt7apwg3z6/final-0000.params?dl=0)/[BaiduYun](https://pan.baidu.com/s/1o8n4VMU), and place it in the model folder. 
+2. Follow `Preparation for Training` (step1-step4)
+3. run `bash scripts/demo_single_image.sh`, you can change the image path in script demo_single_image.sh.
 
 ## References
 1. Tianqi Chen, Mu Li, Yutian Li, Min Lin, Naiyan Wang, Minjie Wang, Tianjun Xiao, Bing Xu, Chiyuan Zhang, and Zheng Zhang. MXNet: A Flexible and Efficient Machine Learning Library for Heterogeneous Distributed Systems. In Neural Information Processing Systems, Workshop on Machine Learning Systems, 2015
 2. Ross Girshick. "Fast R-CNN." In Proceedings of the IEEE International Conference on Computer Vision, 2015.
 3. Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun. "Faster R-CNN: Towards real-time object detection with region proposal networks." In IEEE Transactions on Pattern Analysis and Machine Intelligence, 2016.
-4. Tsung-Yi Lin, Piotr Doll��r, Ross Girshick, Kaiming He, Bharath Hariharan, Serge Belongie. "Feature Pyramid Networks for Object Detection." In Computer Vision and Pattern Recognition, IEEE Conference on, 2017.
-5. Kaiming He, Georgia Gkioxari, Piotr Doll��r, Ross Girshick. "Mask R-CNN." In Proceedings of the IEEE International Conference on Computer Vision, 2017.
+4. Tsung-Yi Lin, Piotr Dollár, Ross Girshick, Kaiming He, Bharath Hariharan, Serge Belongie. "Feature Pyramid Networks for Object Detection." In Computer Vision and Pattern Recognition, IEEE Conference on, 2017.
+5. Kaiming He, Georgia Gkioxari, Piotr Dollár, Ross Girshick. "Mask R-CNN." In Proceedings of the IEEE International Conference on Computer Vision, 2017.
 4. Yangqing Jia, Evan Shelhamer, Jeff Donahue, Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell. "Caffe: Convolutional architecture for fast feature embedding." In Proceedings of the ACM International Conference on Multimedia, 2014.
 5. Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li, and Li Fei-Fei. "ImageNet: A large-scale hierarchical image database." In Computer Vision and Pattern Recognition, IEEE Conference on, 2009.
 6. Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun. "Deep Residual Learning for Image Recognition". In Computer Vision and Pattern Recognition, IEEE Conference on, 2016.
