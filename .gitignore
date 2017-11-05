@@ -1,8 +1,0 @@
-model
-*.pyc
-incubator-mxnet
-.gitignore
-
-rcnn/pycocotools/_mask\.so
-
-rcnn/pycocotools/_mask\.c
