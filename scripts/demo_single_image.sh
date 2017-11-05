@@ -14,6 +14,7 @@ python2 -m rcnn.tools.demo_single_image \
     --epoch 0 \
     --gpu 0 \
     --image_name figures/test.jpg \
-	--thresh 0.3
+    --thresh 0.3 \
+    --vis true
 
 

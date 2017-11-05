@@ -18,7 +18,7 @@ def demo_maskrcnn(network, ctx, prefix, epoch,img_path,
     sym = eval('get_' + network + '_mask_test')(num_classes=config.NUM_CLASSES, num_anchors=config.NUM_ANCHORS)
     arg_params, aux_params = load_param(prefix, epoch, convert=True, ctx=ctx, process=True)
     
-    max_image_shape = (1,3,672,1040)
+    max_image_shape = (1,3,1024,1024)
     max_data_shapes = [("data",max_image_shape),("im_info",(1,3))]
     mod = MutableModule(symbol = sym, data_names = ["data","im_info"], label_names= None,
                             max_data_shapes = max_data_shapes,
@@ -48,13 +48,8 @@ def demo_maskrcnn(network, ctx, prefix, epoch,img_path,
     bbox_deltas = output['bbox_pred_reshape_output'].asnumpy()[0]
     mask_output = output['mask_prob_output'].asnumpy()
 
-    # post processing
     pred_boxes = bbox_pred(rois, bbox_deltas)
     pred_boxes = clip_boxes(pred_boxes, [img_ori.shape[0],img_ori.shape[1]])
-
-    # we used scaled image & roi to train, so it is necessary to transform them back
-#     pred_boxes = pred_boxes / scale
-
 
     nms = py_nms_wrapper(config.TEST.NMS)
 
@@ -137,7 +132,7 @@ def parse_args():
     parser.add_argument('--epoch', help='model to test with', default=default.rcnn_epoch, type=int)
     parser.add_argument('--gpu', help='GPU device to test with', default=0, type=int)
     # rcnn
-    parser.add_argument('--vis', help='turn on visualization', action='store_true')
+    parser.add_argument('--vis', help='turn on visualization', type=bool)
     parser.add_argument('--thresh', help='valid detection threshold', default=1e-3, type=float)
     parser.add_argument('--image_name', help='image file path',type=str)
     
@@ -156,7 +151,7 @@ def main():
                   prefix = args.prefix,
                   epoch = args.epoch, 
                   img_path = args.image_name,
-                  vis= True, 
+                  vis= args.vis, 
                   has_rpn = True,
                   thresh = args.thresh)
 
