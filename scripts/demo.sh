@@ -11,7 +11,7 @@ DATASET=Cityscape
 SET=train
 TEST_SET=val
 
-mkdir ${RESULT_PATH}
+mkdir -p ${RESULT_PATH}
 
 python demo_mask.py \
     --network resnet_fpn \
