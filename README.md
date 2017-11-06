@@ -100,6 +100,12 @@ bash scripts/eval.sh
 bash scripts/demo.sh
 ```
 
+## Test single image
+1. Download model, available at [Dropbox](https://www.dropbox.com/s/zidcbbt7apwg3z6/final-0000.params?dl=0)/[BaiduYun](https://pan.baidu.com/s/1o8n4VMU), and place it in the model folder. 
+2. Follow `Preparation for Training` (step1-step4)
+3. run `bash scripts/demo_single_image.sh`, you can change the image path in script demo_single_image.sh.
+
+
 ## References
 1. Tianqi Chen, Mu Li, Yutian Li, Min Lin, Naiyan Wang, Minjie Wang, Tianjun Xiao, Bing Xu, Chiyuan Zhang, and Zheng Zhang. MXNet: A Flexible and Efficient Machine Learning Library for Heterogeneous Distributed Systems. In Neural Information Processing Systems, Workshop on Machine Learning Systems, 2015
 2. Ross Girshick. "Fast R-CNN." In Proceedings of the IEEE International Conference on Computer Vision, 2015.
