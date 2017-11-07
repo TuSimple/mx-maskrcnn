@@ -105,6 +105,19 @@ bash scripts/demo.sh
 2. Follow `Preparation for Training` (step1-step4)
 3. run `bash scripts/demo_single_image.sh`, you can change the image path in script demo_single_image.sh.
 
+## FAQ
+Q: It says **`AttributeError: 'module' object has no attribute 'ROIAlign'`**.
+
+A: This is because either
+ - you forget to copy the operators to your MXNet folder
+ - or you forget to re-compile MXNet and re-install MXNet python interface
+ - or you install the wrong MXNet
+ 
+     Please print `mxnet.__path__` to make sure you use correct MXNet
+     
+Q: I encounter **`incubator-mxnet/mshadow/mshadow/././././cuda/tensor_gpu-inl.cuh:110: Check failed: err == cudaSuccess (7 vs. 0) Name: MapPlanKernel ErrStr:too many resources requested for launch`** at the begining.
+
+A: Please try adding `MSHADOW_CFLAGS += -DMSHADOW_OLD_CUDA=1` in `mxnet/mshadow/make/mshadow.mk` and re-compile MXNet.
 
 ## References
 1. Tianqi Chen, Mu Li, Yutian Li, Min Lin, Naiyan Wang, Minjie Wang, Tianjun Xiao, Bing Xu, Chiyuan Zhang, and Zheng Zhang. MXNet: A Flexible and Efficient Machine Learning Library for Heterogeneous Distributed Systems. In Neural Information Processing Systems, Workshop on Machine Learning Systems, 2015
