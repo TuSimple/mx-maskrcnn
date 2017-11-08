@@ -347,7 +347,7 @@ def sample_rois_fpn(rois, fg_rois_per_image, rois_per_image, num_classes,
         assert mask_inds is not None
         mask_targets = np.concatenate([decode(encoded_mask).reshape([1, 28, 28]) for encoded_mask in mask_targets])
         if isflipped:
-            np.flip(mask_targets, -1)
+            mask_targets = np.flip(mask_targets, -1)
 
         def _mask_umap(mask_targets, mask_labels, mask_inds):
             _mask_targets = np.zeros((num_rois, num_classes, 28, 28), dtype=np.int8)
