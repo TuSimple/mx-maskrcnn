@@ -127,19 +127,15 @@ class MaskAccMetric(mx.metric.EvalMetric):
         mask_weight = np.concatenate(mask_weight, axis=0)
 
         real_inds = np.where(label != -1)[0]
+        n_rois = real_inds.shape[0]
         mask_prob   = mask_prob[real_inds, label[real_inds]]
         mask_target = mask_target[real_inds, label[real_inds]]
         mask_weight = mask_weight[real_inds, label[real_inds]]
-
-        idx_pred = np.where(np.logical_and(mask_prob > 0.5, mask_weight == 1))
+        idx = np.where(np.logical_and(mask_prob > 0.5, mask_weight == 1))
         mask_pred = np.zeros_like(mask_prob)
-        mask_pred[idx_pred] = 1
-
-        union = np.logical_or(mask_pred, mask_target)
-        intersetion = np.logical_and(mask_pred, mask_target)
-
-        self.sum_metric += np.sum(intersetion)
-        self.num_inst += np.sum(union)
+        mask_pred[idx] = 1
+        self.sum_metric += np.sum(mask_target == mask_pred)
+        self.num_inst += mask_prob.shape[-1] * mask_prob.shape[-2] * n_rois
 
 
 class RPNLogLossMetric(mx.metric.EvalMetric):
