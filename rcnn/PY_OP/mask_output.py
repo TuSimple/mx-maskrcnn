@@ -10,7 +10,7 @@ DEBUG = False
 class MaskOutputOperator(mx.operator.CustomOp):
     def __init__(self):
         super(MaskOutputOperator, self).__init__()
-        self.factor = 0.25
+        self.factor = 0.02
 
     def forward(self, is_train, req, in_data, out_data, aux):
         if DEBUG:
@@ -23,7 +23,7 @@ class MaskOutputOperator(mx.operator.CustomOp):
         assert len(in_data) == 4
         assert len(out_data) == 1
         mask_prob, mask_target, mask_weight, label = in_data
-        n_rois_fg = np.where(label.asnumpy()!=0)[0].shape[0]
+        n_rois_fg = np.where(label.asnumpy()>0)[0].shape[0]
         grad = self.factor*mask_weight*(mask_prob - mask_target)/float(n_rois_fg) # only fg rois contribute to grad
         self.assign(in_grad[0], req[0], mx.nd.array(grad))
 
