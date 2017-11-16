@@ -10,7 +10,7 @@ DEBUG = False
 class MaskOutputOperator(mx.operator.CustomOp):
     def __init__(self):
         super(MaskOutputOperator, self).__init__()
-        self.factor = 0.05
+        self.factor = 0.02
 
     def forward(self, is_train, req, in_data, out_data, aux):
         if DEBUG:
