@@ -3,7 +3,7 @@ import numpy as np
 
 
 def compute_assign_targets(rois, threshold):
-    rois_area = (rois[:, 2] - rois[:, 0] + 1) * (rois[:, 3] - rois[:, 1] + 1)
+    rois_area = np.sqrt((rois[:, 2] - rois[:, 0] + 1) * (rois[:, 3] - rois[:, 1] + 1))
     num_rois = np.shape(rois)[0]
     assign_levels = np.zeros(num_rois, dtype=np.uint8)
     for i, stride in enumerate(config.RCNN_FEAT_STRIDE):
