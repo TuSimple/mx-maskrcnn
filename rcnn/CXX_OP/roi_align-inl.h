@@ -25,7 +25,7 @@ namespace op {
 // These enums are only visible within this header
 namespace roialign {
 enum ROIAlignOpInputs {kData, kBox};
-enum ROIAlignOpOutputs {kOut, kMaxIdx};
+enum ROIAlignOpOutputs {kOut, kMaxIdx_x, kMaxIdx_y};
 }  // roialign
 
 struct ROIAlignParam : public dmlc::Parameter<ROIAlignParam> {
@@ -54,24 +54,29 @@ class ROIAlignOp : public Operator {
                        const std::vector<TBlob> &out_data,
                        const std::vector<TBlob> &aux_args) {
     using namespace mshadow;
-    size_t expected = 2;
-    CHECK_EQ(in_data.size(), expected);
-    CHECK_EQ(out_data.size(), expected);
+    size_t expected_in = 2;
+    size_t expected_out = 3;
+    CHECK_EQ(in_data.size(), expected_in);
+    CHECK_EQ(out_data.size(), expected_out);
     CHECK_EQ(out_data[roialign::kOut].shape_[0], in_data[roialign::kBox].shape_[0]);
-    CHECK_EQ(out_data[roialign::kMaxIdx].shape_[0], in_data[roialign::kBox].shape_[0]);
+    CHECK_EQ(out_data[roialign::kMaxIdx_x].shape_[0], in_data[roialign::kBox].shape_[0]);
+    CHECK_EQ(out_data[roialign::kMaxIdx_y].shape_[0], in_data[roialign::kBox].shape_[0]);
     Stream<xpu> *s = ctx.get_stream<xpu>();
 
     Tensor<xpu, 4, DType> data = in_data[roialign::kData].get<xpu, 4, DType>(s);
     Tensor<xpu, 2, DType> bbox = in_data[roialign::kBox].get<xpu, 2, DType>(s);
     Tensor<xpu, 4, DType> out = out_data[roialign::kOut].get<xpu, 4, DType>(s);
-    Tensor<xpu, 4, DType> max_idx = out_data[roialign::kMaxIdx].get<xpu, 4, DType>(s);
+    Tensor<xpu, 4, DType> max_idx_x = out_data[roialign::kMaxIdx_x].get<xpu, 4, DType>(s);
+    Tensor<xpu, 4, DType> max_idx_y = out_data[roialign::kMaxIdx_y].get<xpu, 4, DType>(s);
     CHECK_EQ(data.CheckContiguous(), true);
     CHECK_EQ(bbox.CheckContiguous(), true);
     CHECK_EQ(out.CheckContiguous(), true);
-    CHECK_EQ(max_idx.CheckContiguous(), true);
+    CHECK_EQ(max_idx_x.CheckContiguous(), true);
+    CHECK_EQ(max_idx_y.CheckContiguous(), true);
     out = -FLT_MAX;
-    max_idx = -1.0f;
-    ROIAlignForward(out, data, bbox, max_idx, param_.spatial_scale);
+    max_idx_x = -1.0f;
+    max_idx_y = -1.0f;
+    ROIAlignForward(out, data, bbox, max_idx_x, max_idx_y, param_.spatial_scale);
   }
 
   virtual void Backward(const OpContext &ctx,
@@ -82,11 +87,13 @@ class ROIAlignOp : public Operator {
                         const std::vector<TBlob> &in_grad,
                         const std::vector<TBlob> &aux_args) {
     using namespace mshadow;
-    size_t expected = 2;
-    CHECK_EQ(in_data.size(), expected);
-    CHECK_EQ(out_data.size(), expected);
+    size_t expected_in = 2;
+    size_t expected_out = 3;
+    CHECK_EQ(in_data.size(), expected_in);
+    CHECK_EQ(out_data.size(), expected_out);
     CHECK_EQ(out_grad[roialign::kOut].shape_[0], in_data[roialign::kBox].shape_[0]);
-    CHECK_EQ(out_data[roialign::kMaxIdx].shape_[0], in_data[roialign::kBox].shape_[0]);
+    CHECK_EQ(out_data[roialign::kMaxIdx_x].shape_[0], in_data[roialign::kBox].shape_[0]);
+    CHECK_EQ(out_data[roialign::kMaxIdx_y].shape_[0], in_data[roialign::kBox].shape_[0]);
     CHECK_NE(req[roialign::kData], kWriteInplace) <<
       "ROIAlign: Backward doesn't support kWriteInplace.";
     CHECK_NE(req[roialign::kBox], kWriteInplace) <<
@@ -95,18 +102,20 @@ class ROIAlignOp : public Operator {
 
     Tensor<xpu, 4, DType> grad_out = out_grad[roialign::kOut].get<xpu, 4, DType>(s);
     Tensor<xpu, 2, DType> bbox = in_data[roialign::kBox].get<xpu, 2, DType>(s);
-    Tensor<xpu, 4, DType> max_idx = out_data[roialign::kMaxIdx].get<xpu, 4, DType>(s);
+    Tensor<xpu, 4, DType> max_idx_x = out_data[roialign::kMaxIdx_x].get<xpu, 4, DType>(s);
+    Tensor<xpu, 4, DType> max_idx_y = out_data[roialign::kMaxIdx_y].get<xpu, 4, DType>(s);
     Tensor<xpu, 4, DType> grad_in = in_grad[roialign::kData].get<xpu, 4, DType>(s);
     Tensor<xpu, 2, DType> grad_roi = in_grad[roialign::kBox].get<xpu, 2, DType>(s);
     CHECK_EQ(grad_out.CheckContiguous(), true);
     CHECK_EQ(bbox.CheckContiguous(), true);
-    CHECK_EQ(max_idx.CheckContiguous(), true);
+    CHECK_EQ(max_idx_x.CheckContiguous(), true);
+    CHECK_EQ(max_idx_y.CheckContiguous(), true);
     CHECK_EQ(grad_in.CheckContiguous(), true);
     if (kAddTo == req[roialign::kData] || kWriteTo == req[roialign::kData]) {
       if (kWriteTo == req[roialign::kData]) {
         grad_in = 0.0f;
       }
-      ROIAlignBackwardAcc(grad_in, grad_out, bbox, max_idx, param_.spatial_scale);
+      ROIAlignBackwardAcc(grad_in, grad_out, bbox, max_idx_x, max_idx_y, param_.spatial_scale);
     }
     if (kWriteTo == req[roialign::kBox]) {
       grad_roi = 0.0f;
@@ -129,11 +138,11 @@ class ROIAlignProp : public OperatorProperty {
   }
 
   std::vector<std::string> ListOutputs() const override {
-    return {"output", "maxidx"};
+    return {"output", "maxidx_x", "maxidx_y"};
   }
 
   int NumOutputs() const override {
-    return 2;
+    return 3;
   }
 
   int NumVisibleOutputs() const override {
@@ -164,8 +173,11 @@ class ROIAlignProp : public OperatorProperty {
     CHECK_EQ(bshape[1], 5) << "bbox should be a 2D tensor of shape [batch, 5]";
 
     // out: [num_rois, c, pooled_h, pooled_w]
-    // max_idx: [num_rois, c, pooled_h, pooled_w]
+    // max_idx_x: [num_rois, c, pooled_h, pooled_w]
+    // max_idx_y: [num_rois, c, pooled_h, pooled_w]
     out_shape->clear();
+    out_shape->push_back(
+         Shape4(bshape[0], dshape[1], param_.pooled_size[0], param_.pooled_size[1]));
     out_shape->push_back(
          Shape4(bshape[0], dshape[1], param_.pooled_size[0], param_.pooled_size[1]));
     out_shape->push_back(
@@ -182,6 +194,7 @@ class ROIAlignProp : public OperatorProperty {
     CHECK_NE(dtype, -1) << "Input must have specified type";
 
     out_type->clear();
+    out_type->push_back(dtype);
     out_type->push_back(dtype);
     out_type->push_back(dtype);
     return true;
@@ -202,7 +215,7 @@ class ROIAlignProp : public OperatorProperty {
     const std::vector<int> &out_grad,
     const std::vector<int> &in_data,
     const std::vector<int> &out_data) const override {
-    return {out_grad[roialign::kOut], in_data[roialign::kBox], out_data[roialign::kMaxIdx]};
+    return {out_grad[roialign::kOut], in_data[roialign::kBox], out_data[roialign::kMaxIdx_x], out_data[roialign::kMaxIdx_y]};
   }
 
   Operator* CreateOperator(Context ctx) const override {

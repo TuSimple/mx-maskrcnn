@@ -19,7 +19,7 @@ __global__ void ROIAlignForwardKernel(const int count, const Dtype* bottom_data,
                                      const int channels, const int height, const int width,
                                      const int pooled_height, const int pooled_width,
                                      const Dtype* bottom_rois, Dtype* top_data,
-                                     Dtype* argmax_data) {
+                                     Dtype* argmax_x, Dtype* argmax_y) {
   for (int index = (blockIdx.x + blockIdx.y * gridDim.x) * blockDim.x + threadIdx.x;
        index < count;
        index += blockDim.x * gridDim.x * gridDim.y) {
@@ -34,7 +34,8 @@ __global__ void ROIAlignForwardKernel(const int count, const Dtype* bottom_data,
 
     if (roi_batch_ind < 0) {
       top_data[index] = 0;
-      argmax_data[index] = 0;
+      argmax_x[index] = 0;
+      argmax_y[index] = 0;
       continue;
     }
 
@@ -66,18 +67,18 @@ __global__ void ROIAlignForwardKernel(const int count, const Dtype* bottom_data,
     // Define an empty pooling region to be zero
     Dtype maxval = is_empty ? 0 : -FLT_MAX;
     // If nothing is pooled, argmax = -1 causes nothing to be backprop'd
-    int maxidx = -1;
-    int bottom_index = 0;
+    Dtype maxidx_x = -1;
+    Dtype maxidx_y = -1;
+
     bottom_data += (roi_batch_ind * channels + c) * height * width;
     Dtype h_stride = (hend - hstart)/3.0;
     Dtype w_stride = (wend - wstart)/3.0;
     for (Dtype h = hstart+h_stride; h <= hend-h_stride+0.01; h += max(h_stride, 0.01)) {
       for (Dtype w = wstart+w_stride; w <= wend-w_stride+0.01; w += max(w_stride, 0.01)) {
-        bottom_index ++;
         int hlow = min(max(static_cast<int>(floor(h)), 0), height-1);
-        int hhigh = hlow + 1;
+        int hhigh = min(max(static_cast<int>(ceil(h)), 0), height-1);
         int wleft = min(max(static_cast<int>(floor(w)), 0), width-1);
-        int wright = wleft + 1;
+        int wright = min(max(static_cast<int>(ceil(w)), 0), width-1);
         int topleft = hlow * width + wleft;
         int topright = hlow * width + wright;
         int bottomleft = hhigh * width + wleft;
@@ -90,12 +91,14 @@ __global__ void ROIAlignForwardKernel(const int count, const Dtype* bottom_data,
         
         if (value > maxval) {
           maxval = value;
-          maxidx = bottom_index;
+          maxidx_x = w;
+          maxidx_y = h;
         }
       }
     }
     top_data[index] = maxval;
-    argmax_data[index] = (Dtype)maxidx;
+    argmax_x[index] = (Dtype)maxidx_x;
+    argmax_y[index] = (Dtype)maxidx_y;
   }
 }
 
@@ -103,12 +106,14 @@ template<typename Dtype>
 inline void ROIAlignForward(const Tensor<gpu, 4, Dtype> &out,
                            const Tensor<gpu, 4, Dtype> &data,
                            const Tensor<gpu, 2, Dtype> &bbox,
-                           const Tensor<gpu, 4, Dtype> &max_idx,
+                           const Tensor<gpu, 4, Dtype> &max_idx_x,
+                           const Tensor<gpu, 4, Dtype> &max_idx_y,
                            const float spatial_scale) {
   const Dtype *bottom_data = data.dptr_;
   const Dtype *bottom_rois = bbox.dptr_;
   Dtype *top_data = out.dptr_;
-  Dtype *argmax_data = max_idx.dptr_;
+  Dtype *argmax_x = max_idx_x.dptr_;
+  Dtype *argmax_y = max_idx_y.dptr_;
   const int count = out.shape_.Size();
   const int channels = data.size(1);
   const int height = data.size(2);
@@ -122,12 +127,13 @@ inline void ROIAlignForward(const Tensor<gpu, 4, Dtype> &out,
   cudaStream_t stream = Stream<gpu>::GetStream(out.stream_);
   ROIAlignForwardKernel<Dtype><<<dimGrid, dimBlock, 0, stream>>>(
       count, bottom_data, spatial_scale, channels, height, width,
-      pooled_height, pooled_width, bottom_rois, top_data, argmax_data);
+      pooled_height, pooled_width, bottom_rois, top_data, argmax_x, argmax_y);
 }
 
 template<typename Dtype>
 __global__ void ROIAlignBackwardAccKernel(const int count, const Dtype* top_diff,
-                                         const Dtype* argmax_data, const int num_rois,
+                                         const Dtype* argmax_x, const Dtype* argmax_y, 
+                                         const int num_rois,
                                          const float spatial_scale,
                                          const int channels, const int height, const int width,
                                          const int pooled_height, const int pooled_width,
@@ -165,62 +171,33 @@ __global__ void ROIAlignBackwardAccKernel(const int count, const Dtype* top_diff
 
       int offset = (roi_n * channels + c) * pooled_height * pooled_width;
       const Dtype* offset_top_diff = top_diff + offset;
-      const Dtype* offset_argmax_data = argmax_data + offset;
-
-      // Compute feasible set of pooled units that could have pooled
-      // this bottom unit
+      const Dtype* offset_argmax_x = argmax_x + offset;
+      const Dtype* offset_argmax_y = argmax_y + offset;
 
       // Force malformed ROIs to be 1x1
       Dtype roi_width = max(roi_end_w - roi_start_w, static_cast<Dtype>(1));
       Dtype roi_height = max(roi_end_h - roi_start_h, static_cast<Dtype>(1));
 
-      Dtype bin_size_h = static_cast<Dtype>(roi_height)
-                         / static_cast<Dtype>(pooled_height);
-      Dtype bin_size_w = static_cast<Dtype>(roi_width)
-                         / static_cast<Dtype>(pooled_width);
-
       for (int ph = 0; ph < pooled_height; ++ph) {
         for (int pw = 0; pw < pooled_width; ++pw) {
-          Dtype hstart = static_cast<Dtype>((ph) * bin_size_h);
-          Dtype wstart = static_cast<Dtype>((pw) * bin_size_w);
-          Dtype hend = static_cast<Dtype>((ph + 1) * bin_size_h);
-          Dtype wend = static_cast<Dtype>((pw + 1) * bin_size_w);
-
-          hstart = min(max(hstart + roi_start_h, static_cast<Dtype>(0)), static_cast<Dtype>(height));
-          hend = min(max(hend + roi_start_h, static_cast<Dtype>(0)), static_cast<Dtype>(height));
-          wstart = min(max(wstart + roi_start_w, static_cast<Dtype>(0)), static_cast<Dtype>(width));
-          wend = min(max(wend + roi_start_w, static_cast<Dtype>(0)), static_cast<Dtype>(width));
-
-          bool in_bin = (w > wstart - 1.0 && w < wend + 1.0 &&
-                      h > hstart - 1.0 && h < hend + 1.0);
-          if (!in_bin) {
-            continue;
-          }
-
           const int pool_index = ph * pooled_width + pw;
-          int bottom_index = 0;
-          Dtype h_stride = (hend - hstart)/3.0;
-          Dtype w_stride = (wend - wstart)/3.0;
-          for (Dtype rh = hstart+h_stride; rh <= hend-h_stride+0.01; rh += max(h_stride, 0.01)) {
-            for (Dtype rw = wstart+w_stride; rw <= wend-w_stride+0.01; rw += max(w_stride, 0.01)) {
-              bottom_index ++;
-              if (offset_argmax_data[pool_index] != bottom_index) continue;
-              // compute the integer coordinates around (h, w) for bilinear interpolation
-              int hlow = min(max(static_cast<int>(floor(rh)), 0), height-1);
-              int hhigh = hlow + 1;
-              int wleft = min(max(static_cast<int>(floor(rw)), 0), width-1);
-              int wright = wleft + 1;
-              if (h != hlow && h != hhigh && w != wleft && w != wright) // (w, h) is not around (rw, rh)
-                  continue;
+          Dtype a_x = offset_argmax_x[pool_index];
+          Dtype a_y = offset_argmax_y[pool_index];
+          int hlow = min(max(static_cast<int>(floor(a_y)), 0), height-1);
+          int hhigh = min(max(static_cast<int>(ceil(a_y)), 0), height-1);
+          int wleft = min(max(static_cast<int>(floor(a_x)), 0), width-1);
+          int wright = min(max(static_cast<int>(ceil(a_x)), 0), width-1);
+
+          if (h != hlow && h != hhigh && w != wleft && w != wright) // (w, h) is not around (a_x, a_y)
+              continue;
               
-              Dtype alpha = (hlow == hhigh) ? static_cast<Dtype>(0.5) : (rh - hlow) / (hhigh - hlow);
-              Dtype beta = (wleft == wright) ? static_cast<Dtype>(0.5) : (rw - wleft) / (wright - wleft);
-              if (h == hlow && w == wleft) gradient += offset_top_diff[pool_index] * (1 - alpha) * (1 - beta);
-              else if (h == hlow && w == wright) gradient += offset_top_diff[pool_index] * (1 - alpha) * beta;
-              else if (h == hhigh && w == wleft) gradient += offset_top_diff[pool_index] * alpha * (1 - beta);
-              else if (h == hhigh && w == wright) gradient += offset_top_diff[pool_index] * alpha * beta;
-            }
-          }
+
+          Dtype alpha = (hlow == hhigh) ? static_cast<Dtype>(0.5) : (a_y - hlow) / (hhigh - hlow);
+          Dtype beta = (wleft == wright) ? static_cast<Dtype>(0.5) : (a_x - wleft) / (wright - wleft);
+          if (h == hlow && w == wleft) gradient += offset_top_diff[pool_index] * (1 - alpha) * (1 - beta);
+          else if (h == hlow && w == wright) gradient += offset_top_diff[pool_index] * (1 - alpha) * beta;
+          else if (h == hhigh && w == wleft) gradient += offset_top_diff[pool_index] * alpha * (1 - beta);
+          else if (h == hhigh && w == wright) gradient += offset_top_diff[pool_index] * alpha * beta;
         }
       }
     }
@@ -232,12 +209,14 @@ template<typename Dtype>
 inline void ROIAlignBackwardAcc(const Tensor<gpu, 4, Dtype> &in_grad,
                                const Tensor<gpu, 4, Dtype> &out_grad,
                                const Tensor<gpu, 2, Dtype> &bbox,
-                               const Tensor<gpu, 4, Dtype> &max_idx,
+                               const Tensor<gpu, 4, Dtype> &max_idx_x,
+                               const Tensor<gpu, 4, Dtype> &max_idx_y,
                                const float spatial_scale) {
   const Dtype *top_diff = out_grad.dptr_;
   const Dtype *bottom_rois = bbox.dptr_;
   Dtype *bottom_diff = in_grad.dptr_;
-  Dtype *argmax_data = max_idx.dptr_;
+  Dtype *argmax_x = max_idx_x.dptr_;
+  Dtype *argmax_y = max_idx_y.dptr_;
   const int count = in_grad.shape_.Size();
   const int num_rois = bbox.size(0);
   const int channels = in_grad.size(1);
@@ -251,7 +230,7 @@ inline void ROIAlignBackwardAcc(const Tensor<gpu, 4, Dtype> &in_grad,
   CheckLaunchParam(dimGrid, dimBlock, "ROIPooling Backward");
   cudaStream_t stream = Stream<gpu>::GetStream(in_grad.stream_);
   ROIAlignBackwardAccKernel<Dtype><<<dimGrid, dimBlock, 0, stream>>>(
-      count, top_diff, argmax_data, num_rois, spatial_scale, channels, height, width,
+      count, top_diff, argmax_x, argmax_y, num_rois, spatial_scale, channels, height, width,
       pooled_height, pooled_width, bottom_diff, bottom_rois);
 }
 
@@ -261,18 +240,20 @@ template<typename Dtype>
 inline void ROIAlignForward(const Tensor<gpu, 4, Dtype> &out,
                            const Tensor<gpu, 4, Dtype> &data,
                            const Tensor<gpu, 2, Dtype> &bbox,
-                           const Tensor<gpu, 4, Dtype> &max_idx,
+                           const Tensor<gpu, 4, Dtype> &max_idx_x,
+                           const Tensor<gpu, 4, Dtype> &max_idx_y,
                            const float spatial_scale) {
-  cuda::ROIAlignForward(out, data, bbox, max_idx, spatial_scale);
+  cuda::ROIAlignForward(out, data, bbox, max_idx_x, max_idx_y, spatial_scale);
 }
 
 template<typename Dtype>
 inline void ROIAlignBackwardAcc(const Tensor<gpu, 4, Dtype> &in_grad,
                                const Tensor<gpu, 4, Dtype> &out_grad,
                                const Tensor<gpu, 2, Dtype> &bbox,
-                               const Tensor<gpu, 4, Dtype> &max_idx,
+                               const Tensor<gpu, 4, Dtype> &max_idx_x,
+                               const Tensor<gpu, 4, Dtype> &max_idx_y,
                                const float spatial_scale) {
-  cuda::ROIAlignBackwardAcc(in_grad, out_grad, bbox, max_idx, spatial_scale);
+  cuda::ROIAlignBackwardAcc(in_grad, out_grad, bbox, max_idx_x, max_idx_y, spatial_scale);
 }
 
 }  // namespace mshadow

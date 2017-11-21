@@ -21,7 +21,8 @@ template<typename Dtype>
 inline void ROIAlignForward(const Tensor<cpu, 4, Dtype> &out,
                            const Tensor<cpu, 4, Dtype> &data,
                            const Tensor<cpu, 2, Dtype> &bbox,
-                           const Tensor<cpu, 4, Dtype> &max_idx,
+                           const Tensor<cpu, 4, Dtype> &max_idx_x,
+                           const Tensor<cpu, 4, Dtype> &max_idx_y,
                            const float spatial_scale_) {
   
   return;
@@ -31,7 +32,8 @@ template<typename Dtype>
 inline void ROIAlignBackwardAcc(const Tensor<cpu, 4, Dtype> &in_grad,
                                const Tensor<cpu, 4, Dtype> &out_grad,
                                const Tensor<cpu, 2, Dtype> &bbox,
-                               const Tensor<cpu, 4, Dtype> &max_idx,
+                               const Tensor<cpu, 4, Dtype> &max_idx_x,
+                               const Tensor<cpu, 4, Dtype> &max_idx_y,
                                const float spatial_scale_) {
   
   return;
