@@ -3,7 +3,6 @@ import logging
 import pprint
 import mxnet as mx
 import numpy as np
-import pdb
 import os.path as osp
 import cPickle as pkl
 
@@ -13,6 +12,7 @@ from ..core import callback, metric
 from ..core.loader import MaskROIIter
 from ..core.module import MutableModule
 from ..processing.bbox_regression import add_bbox_regression_targets, make_mask_targets
+from ..processing.assign_levels import add_assign_targets
 from ..utils.load_data import load_proposal_roidb, merge_roidb #, filter_roidb
 from ..utils.load_model import load_param
 
@@ -87,6 +87,7 @@ def train_maskrcnn(network, dataset, image_set, root_path, dataset_path,
 
         roidb = filter_roidb(roidb)
         means, stds = add_bbox_regression_targets(roidb)
+        add_assign_targets(roidb)
         maskdb = make_mask_targets(roidb)
         for file, obj in zip([roidb_file, maskdb_file, mean_file, std_file], [roidb, maskdb, means, stds]):
             with open(file, 'w') as f:

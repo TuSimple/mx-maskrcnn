@@ -131,6 +131,7 @@ def get_fpn_maskrcnn_batch(roidb, maskdb):
         num_classes = roi_rec['gt_overlaps'].shape[1]
         # label = class RoI has max overlap with
         rois = roi_rec['boxes']
+        assign_levels = roi_rec['assign_levels']
         labels = roi_rec['max_classes']
         overlaps = roi_rec['max_overlaps']
         bbox_targets = roi_rec['bbox_targets']
@@ -143,7 +144,7 @@ def get_fpn_maskrcnn_batch(roidb, maskdb):
         mask_inds = maskdb[im_id]['mask_inds']
 
         im_rois_on_levels, labels_on_levels, bbox_targets_on_levels, bbox_weights_on_levels, mask_targets_on_levels, mask_weights_on_levels = \
-            sample_rois_fpn(rois, fg_rois_per_image, rois_per_image, num_classes,
+            sample_rois_fpn(rois, assign_levels, fg_rois_per_image, rois_per_image, num_classes,
                             labels, overlaps, bbox_targets, mask_targets=mask_targets, mask_labels=mask_labels, mask_inds=mask_inds, isflipped=isflipped, im_info=im_info)
 
         level_related_data_on_imgs.update({'img_%s' % im_i: {'rois_on_levels': im_rois_on_levels,
@@ -250,11 +251,12 @@ def sample_rois(rois, fg_rois_per_image, rois_per_image, num_classes,
     else:
         return rois, labels, bbox_targets, bbox_weights
 
-def sample_rois_fpn(rois, fg_rois_per_image, rois_per_image, num_classes,
+def sample_rois_fpn(rois, assign_levels, fg_rois_per_image, rois_per_image, num_classes,
                     labels=None, overlaps=None, bbox_targets=None, mask_targets=None, mask_labels=None, mask_inds=None, isflipped=None, gt_boxes=None, im_info=None):
     """
     generate random sample of ROIs comprising foreground and background examples
     :param rois: all_rois [n, 4]; e2e: [n, 5] with batch_index
+    :param assign_levels: [n]
     :param fg_rois_per_image: foreground roi number
     :param rois_per_image: total roi number
     :param num_classes: number of classes
@@ -306,22 +308,10 @@ def sample_rois_fpn(rois, fg_rois_per_image, rois_per_image, num_classes,
 
     # bg rois statistics
     if DEBUG:
-        bg_rois = rois[bg_indexes]
-        bg_rois_area = np.sqrt((bg_rois[:, 3] - bg_rois[:, 1]) * (bg_rois[:, 2] - bg_rois[:, 0]))
-
-        area_threshold = [[np.inf, 448],
-                          [448,    224],
-                          [224,    112],
-                          [112,     0]]
-
-        area_threshold = area_threshold[0:len(config.RCNN_FEAT_STRIDE)]
-        area_threshold[-1][-1] = 0
-
+        bg_assign = assign_levels[bg_indexes]
         bg_rois_on_levels = dict()
         for i, s in enumerate(config.RCNN_FEAT_STRIDE):
-            thd = area_threshold[i]
-            index = np.logical_and(thd[1] <= bg_rois_area, bg_rois_area < thd[0])
-            bg_rois_on_levels.update({'stride%s'%s:np.sum(index)})
+            bg_rois_on_levels.update({'stride%s'%s:len(np.where(bg_assign == s)[0])})
         print bg_rois_on_levels
 
     # indexes selected
@@ -341,6 +331,7 @@ def sample_rois_fpn(rois, fg_rois_per_image, rois_per_image, num_classes,
     # set labels of bg_rois to be 0
     labels[fg_rois_per_this_image:] = 0
     rois = rois[keep_indexes]
+    assign_levels = assign_levels[keep_indexes]
 
     if mask_targets is not None:
         assert mask_labels is not None
@@ -373,17 +364,6 @@ def sample_rois_fpn(rois, fg_rois_per_image, rois_per_image, num_classes,
         expand_bbox_regression_targets(bbox_target_data, num_classes)
 
     # Assign to levels
-
-    rois_area = np.sqrt((rois[:, 3] - rois[:, 1]) * (rois[:, 2] - rois[:, 0]))
-
-    area_threshold = [[np.inf, 448],
-                      [448,    224],
-                      [224,    112],
-                      [112,     0]]
-
-    area_threshold = area_threshold[0:len(config.RCNN_FEAT_STRIDE)]
-    area_threshold[-1][-1] = 0
-
     rois_on_levels = dict()
     labels_on_levels = dict()
     bbox_targets_on_levels = dict()
@@ -392,8 +372,7 @@ def sample_rois_fpn(rois, fg_rois_per_image, rois_per_image, num_classes,
         mask_targets_on_levels = dict()
         mask_weights_on_levels = dict()
     for i, s in enumerate(config.RCNN_FEAT_STRIDE):
-        thd = area_threshold[i]
-        index         = np.logical_and(thd[1] <= rois_area, rois_area < thd[0])
+        index = np.where(assign_levels == s)
         _rois         = rois[index]
         _labels       = labels[index]
         _bbox_targets = bbox_targets[index]
