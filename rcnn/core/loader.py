@@ -91,7 +91,7 @@ class TestLoader(mx.io.DataIter):
 
 
 class MaskROIIter(mx.io.DataIter):
-    def __init__(self, roidb, maskdb, batch_size=2, shuffle=False, ctx=None, work_load_list=None, aspect_grouping=False):
+    def __init__(self, roidb, batch_size=2, shuffle=False, ctx=None, work_load_list=None, aspect_grouping=False):
         """
         This Iter will provide roi data to Fast R-CNN network
         :param roidb: must be preprocessed
@@ -105,7 +105,6 @@ class MaskROIIter(mx.io.DataIter):
         super(MaskROIIter, self).__init__()
         # save parameters as properties
         self.roidb = roidb
-        self.maskdb = maskdb
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.ctx = ctx
@@ -214,7 +213,7 @@ class MaskROIIter(mx.io.DataIter):
         levels_data_list = []
         for islice in slices:
             iroidb = [roidb[i] for i in range(islice.start, islice.stop)]
-            im_array, levels_data = get_fpn_maskrcnn_batch(iroidb, self.maskdb)
+            im_array, levels_data = get_fpn_maskrcnn_batch(iroidb)
             im_array_list.append(im_array)
             levels_data_list.append(levels_data)
 

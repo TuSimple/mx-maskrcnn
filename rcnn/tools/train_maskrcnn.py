@@ -11,7 +11,7 @@ from ..symbol import *
 from ..core import callback, metric
 from ..core.loader import MaskROIIter
 from ..core.module import MutableModule
-from ..processing.bbox_regression import add_bbox_regression_targets, make_mask_targets
+from ..processing.bbox_regression import add_bbox_regression_targets, add_mask_targets
 from ..processing.assign_levels import add_assign_targets
 from ..utils.load_data import load_proposal_roidb, merge_roidb #, filter_roidb
 from ..utils.load_model import load_param
@@ -37,23 +37,18 @@ def train_maskrcnn(network, dataset, image_set, root_path, dataset_path,
     # print config
     pprint.pprint(config)
 
-    roidb_file = root_path+'/cache/'+dataset+'_roidb.pkl'
-    maskdb_file = root_path+'/cache/'+dataset+'_mask.pkl'
-    mean_file = root_path+'/cache/'+dataset+'_roidb_mean.pkl'
-    std_file = root_path+'/cache/'+dataset+'_roidb_std.pkl'
+    roidb_file = root_path + '/cache/' + dataset + '_roidb_with_mask.pkl'
+    mean_file = root_path + '/cache/' + dataset + '_roidb_mean.pkl'
+    std_file = root_path + '/cache/' + dataset + '_roidb_std.pkl'
     if maskrcnn_stage is not None:
-        roidb_file = root_path+'/cache/'+dataset+'_roidb_' + maskrcnn_stage + '.pkl'
-        maskdb_file = root_path+'/cache/'+dataset+'_mask_' + maskrcnn_stage + '.pkl'
-        mean_file = root_path+'/cache/'+dataset+'_roidb_mean_' + maskrcnn_stage + '.pkl'
-        std_file = root_path+'/cache/'+dataset+'_roidb_std_' + maskrcnn_stage + '.pkl'
+        roidb_file = root_path + '/cache/' + dataset + '_roidb_with_mask_' + maskrcnn_stage + '.pkl'
+        mean_file = root_path + '/cache/' + dataset + '_roidb_mean_' + maskrcnn_stage + '.pkl'
+        std_file = root_path + '/cache/' + dataset + '_roidb_std_' + maskrcnn_stage + '.pkl'
 
-    if osp.exists(roidb_file) and osp.exists(maskdb_file) and osp.exists(mean_file) and osp.exists(std_file):
+    if osp.exists(roidb_file) and osp.exists(mean_file) and osp.exists(std_file):
         print 'Load ' + roidb_file
         with open(roidb_file, 'r') as f:
             roidb = pkl.load(f)
-        print 'Load ' + maskdb_file
-        with open(maskdb_file, 'r') as f:
-            maskdb = pkl.load(f)
         print 'Load ' + mean_file
         with open(mean_file, 'r') as f:
             means = pkl.load(f)
@@ -70,6 +65,7 @@ def train_maskrcnn(network, dataset, image_set, root_path, dataset_path,
 
         def filter_roidb(roidb):
             """ remove roidb entries without usable rois """
+
             def is_valid(entry):
                 """ valid images have at least 1 fg or bg roi """
                 overlaps = entry['max_overlaps']
@@ -88,14 +84,14 @@ def train_maskrcnn(network, dataset, image_set, root_path, dataset_path,
         roidb = filter_roidb(roidb)
         means, stds = add_bbox_regression_targets(roidb)
         add_assign_targets(roidb)
-        maskdb = make_mask_targets(roidb)
-        for file, obj in zip([roidb_file, maskdb_file, mean_file, std_file], [roidb, maskdb, means, stds]):
+        add_mask_targets(roidb)
+        for file, obj in zip([roidb_file, mean_file, std_file], [roidb, means, stds]):
             with open(file, 'w') as f:
                 pkl.dump(obj, f, -1)
 
     # load training data
-    train_data = MaskROIIter(roidb, maskdb, batch_size=input_batch_size, shuffle=not no_shuffle,
-                         ctx=ctx, work_load_list=work_load_list, aspect_grouping=config.TRAIN.ASPECT_GROUPING)
+    train_data = MaskROIIter(roidb, batch_size=input_batch_size, shuffle=not no_shuffle,
+                             ctx=ctx, work_load_list=work_load_list, aspect_grouping=config.TRAIN.ASPECT_GROUPING)
 
     # infer max shape
     max_data_shape = [('data', (input_batch_size, 3, max([v[0] for v in config.SCALES]), max([v[1] for v in config.SCALES])))]

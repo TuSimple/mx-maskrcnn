@@ -96,7 +96,7 @@ def get_fpn_rcnn_testbatch(roidb):
 
     return data, label, im_info
 
-def get_fpn_maskrcnn_batch(roidb, maskdb):
+def get_fpn_maskrcnn_batch(roidb):
     """
     return a dictionary that contains raw data.
     """
@@ -131,21 +131,20 @@ def get_fpn_maskrcnn_batch(roidb, maskdb):
         num_classes = roi_rec['gt_overlaps'].shape[1]
         # label = class RoI has max overlap with
         rois = roi_rec['boxes']
-        assign_levels = roi_rec['assign_levels']
         labels = roi_rec['max_classes']
         overlaps = roi_rec['max_overlaps']
         bbox_targets = roi_rec['bbox_targets']
         im_info = roi_rec['im_info']
-        isflipped = roi_rec['flipped']
-        im_id = roidb[im_i]['image']
 
-        mask_targets = maskdb[im_id]['mask_targets']
-        mask_labels = maskdb[im_id]['mask_labels']
-        mask_inds = maskdb[im_id]['mask_inds']
+        mask_targets = roi_rec['mask_targets']
+        mask_labels = roi_rec['mask_labels']
+        mask_inds = roi_rec['mask_inds']
+
+        assign_levels = roi_rec['assign_levels']
 
         im_rois_on_levels, labels_on_levels, bbox_targets_on_levels, bbox_weights_on_levels, mask_targets_on_levels, mask_weights_on_levels = \
             sample_rois_fpn(rois, assign_levels, fg_rois_per_image, rois_per_image, num_classes,
-                            labels, overlaps, bbox_targets, mask_targets=mask_targets, mask_labels=mask_labels, mask_inds=mask_inds, isflipped=isflipped, im_info=im_info)
+                            labels, overlaps, bbox_targets, mask_targets=mask_targets, mask_labels=mask_labels, mask_inds=mask_inds, im_info=im_info)
 
         level_related_data_on_imgs.update({'img_%s' % im_i: {'rois_on_levels': im_rois_on_levels,
                                                              'labels_on_levels': labels_on_levels,
@@ -252,7 +251,7 @@ def sample_rois(rois, fg_rois_per_image, rois_per_image, num_classes,
         return rois, labels, bbox_targets, bbox_weights
 
 def sample_rois_fpn(rois, assign_levels, fg_rois_per_image, rois_per_image, num_classes,
-                    labels=None, overlaps=None, bbox_targets=None, mask_targets=None, mask_labels=None, mask_inds=None, isflipped=None, gt_boxes=None, im_info=None):
+                    labels=None, overlaps=None, bbox_targets=None, mask_targets=None, mask_labels=None, mask_inds=None, gt_boxes=None, im_info=None):
     """
     generate random sample of ROIs comprising foreground and background examples
     :param rois: all_rois [n, 4]; e2e: [n, 5] with batch_index
@@ -336,10 +335,6 @@ def sample_rois_fpn(rois, assign_levels, fg_rois_per_image, rois_per_image, num_
     if mask_targets is not None:
         assert mask_labels is not None
         assert mask_inds is not None
-        mask_targets = np.concatenate([decode(encoded_mask).reshape([1, 28, 28]) for encoded_mask in mask_targets])
-        if isflipped:
-            mask_targets = np.flip(mask_targets, -1)
-
         def _mask_umap(mask_targets, mask_labels, mask_inds):
             _mask_targets = np.zeros((num_rois, num_classes, 28, 28), dtype=np.int8)
             _mask_weights = np.zeros((num_rois, num_classes, 1, 1), dtype=np.int8)
