@@ -132,7 +132,7 @@ def parse_args():
     parser.add_argument('--epoch', help='model to test with', default=default.rcnn_epoch, type=int)
     parser.add_argument('--gpu', help='GPU device to test with', default=0, type=int)
     # rcnn
-    parser.add_argument('--vis', help='turn on visualization', type=bool)
+    parser.add_argument('--vis', help='turn on visualization', action='store_true')
     parser.add_argument('--thresh', help='valid detection threshold', default=1e-3, type=float)
     parser.add_argument('--image_name', help='image file path',type=str)
     
