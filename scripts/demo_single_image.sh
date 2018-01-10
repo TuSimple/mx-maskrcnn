@@ -1,7 +1,7 @@
 export MXNET_CUDNN_AUTOTUNE_DEFAULT=0
 export PYTHONUNBUFFERED=1
 export MXNET_ENABLE_GPU_P2P=0
-export PYTHONPATH=incubator-mxnet/python/
+export PYTHONPATH=${PYTHONPATH}:incubator-mxnet/python/
 
 MODEL_PATH=model/
 PREFIX=${MODEL_PATH}final
